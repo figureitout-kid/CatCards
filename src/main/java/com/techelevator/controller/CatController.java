@@ -3,6 +3,8 @@ package com.techelevator.controller;
 import com.techelevator.dao.CatCardDao;
 import com.techelevator.exception.DaoException;
 import com.techelevator.model.CatCard;
+import com.techelevator.model.CatFact;
+import com.techelevator.model.CatPic;
 import com.techelevator.services.CatFactService;
 import com.techelevator.services.CatPicService;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.validation.Valid;
 import java.util.List;
 
+@CrossOrigin
 @RestController
 @RequestMapping ("/api/cards")
 public class CatController {
@@ -26,14 +29,26 @@ public class CatController {
         this.catPicService = catPicService;
     }
 
-    @ResponseStatus(HttpStatus.CREATED)
-    @RequestMapping(path = "", method = RequestMethod.POST)
-    public CatCard create(@RequestBody CatCard catCard){
-        return catCardDao.createCatCard(catCard);
+    @GetMapping("/random")
+    public CatCard getRandomCatCard() {
+        String catFact = catFactService.getFact().getText();
+        String catPicUrl = catPicService.getPic().getFile();
+
+        CatCard randomCatCard = new CatCard();
+        randomCatCard.setCatFact(catFact);
+        randomCatCard.setImgUrl(catPicUrl);
+        randomCatCard.setCaption("CAT you believe it!");
+        return catCardDao.createCatCard(randomCatCard);
     }
 
-    @RequestMapping(path = "api/cards/{id}", method = RequestMethod.GET)
-    public CatCard get(@PathVariable int id) {
+
+    @GetMapping
+    public List<CatCard> listAllCards(){
+        return catCardDao.getCatCards();
+    }
+
+    @GetMapping("{id}")
+    public CatCard getCatCardById(@PathVariable int id) {
         CatCard catCard = catCardDao.getCatCardById(id);
         if (catCard == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found");
@@ -42,13 +57,13 @@ public class CatController {
         }
     }
 
-    @RequestMapping(path = "api/cards", method = RequestMethod.GET)
-    public List<CatCard> catCards() {
-        return catCardDao.getCatCards();
+    @PostMapping
+    public CatCard addNewCard(@RequestBody CatCard catCard) {
+        return catCardDao.createCatCard(catCard);
     }
 
-    @RequestMapping(path = "api/cards/{id}", method = RequestMethod.PUT)
-    public CatCard updateCatCard(@Valid @RequestBody CatCard catCard, @PathVariable int id){
+    @PutMapping("/{id}")
+    public CatCard updateCard(@PathVariable int id, @RequestBody CatCard catCard) {
         catCard.setCatCardId(id);
         try {
             CatCard updatedCatCard = catCardDao.updateCatCard(catCard);
@@ -59,9 +74,8 @@ public class CatController {
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @RequestMapping(path = "api/cards/{id}", method = RequestMethod.DELETE)
-    public void delete(@PathVariable int id) {
+    @DeleteMapping("/{id}")
+    public void deleteCard(@PathVariable int id) {
         catCardDao.deleteCatCardById(id);
-
     }
 }
